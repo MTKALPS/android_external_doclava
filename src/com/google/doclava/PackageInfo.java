@@ -1,4 +1,9 @@
 /*
+* Copyright (C) 2014 MediaTek Inc.
+* Modification based on code covered by the mentioned copyright
+* and/or permission notice(s).
+*/
+/*
  * Copyright (C) 2010 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -33,7 +38,7 @@ public class PackageInfo extends DocInfo implements ContainerInfo {
 
   public PackageInfo(PackageDoc pkg, String name, SourcePositionInfo position) {
     super(pkg.getRawCommentText(), position);
-    if (name.isEmpty()) {
+    if (isEmpty(name)) {
       mName = DEFAULT_PACKAGE;
     } else {
       mName = name;
@@ -52,7 +57,7 @@ public class PackageInfo extends DocInfo implements ContainerInfo {
   public PackageInfo(String name, SourcePositionInfo position) {
     super("", position);
 
-    if (name.isEmpty()) {
+    if (isEmpty(name)) {
       mName = "default package";
     } else {
       mName = name;
@@ -84,6 +89,27 @@ public class PackageInfo extends DocInfo implements ContainerInfo {
 
   @Override
   public boolean isHidden() {
+      /// M: Override when processing internal. @{
+      if (Doclava.processInternal()) {
+          // Check ClassInfo type elements
+          if (interfaces() != null && interfaces().length > 0) {
+              return false;
+          }
+          if (ordinaryClasses() != null && ordinaryClasses().length > 0) {
+              return false;
+          }
+          if (enums() != null && enums().length > 0) {
+              return false;
+          }
+          if (exceptions() != null && exceptions().length > 0) {
+              return false;
+          }
+          if (errors() != null && errors().length > 0) {
+              return false;
+          }
+          return true;
+      }
+      /// @}
     if (mHidden == null) {
       if (hasHideComment()) {
         // We change the hidden value of the package if a class wants to be not hidden.
@@ -522,5 +548,9 @@ public class PackageInfo extends DocInfo implements ContainerInfo {
       Collections.sort(clsInfoDiff, ClassInfo.comparator);
     }
     return consistent;
+  }
+
+  private static boolean isEmpty(String str) {
+      return str == null || str.length() == 0;
   }
 }

@@ -1,4 +1,9 @@
 /*
+* Copyright (C) 2014 MediaTek Inc.
+* Modification based on code covered by the mentioned copyright
+* and/or permission notice(s).
+*/
+/*
  * Copyright (C) 2010 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -52,7 +57,8 @@ public class Stubs {
     if (apiFile != null) {
       try {
         File xml = new File(apiFile);
-        xml.getParentFile().mkdirs();
+//        xml.getParentFile().mkdirs();
+        ClearPage.ensureDirectory(xml);
         apiWriter = new PrintStream(new BufferedOutputStream(new FileOutputStream(xml)));
       } catch (FileNotFoundException e) {
         Errors.error(Errors.IO_ERROR, new SourcePositionInfo(apiFile, 0, 0),
@@ -337,10 +343,20 @@ public class Stubs {
         // with it by finding the first super class which passes checklevel for purposes of
         // generating the doc & stub information, and proceeding normally.
         ClassInfo publicSuper = cl.superclass();
-        cl.init(cl.asTypeInfo(), cl.realInterfaces(), cl.realInterfaceTypes(), cl.innerClasses(),
-            cl.allConstructors(), cl.allSelfMethods(), cl.annotationElements(), cl.allSelfFields(),
-            cl.enumConstants(), cl.containingPackage(), cl.containingClass(),
-            publicSuper, publicSuper.asTypeInfo(), cl.annotations());
+        /// M: After add internal Javadoc tag, publicSuper maybe null sometime,
+        // we use supr instead. @{
+        if (publicSuper == null) {
+            cl.init(cl.asTypeInfo(), cl.realInterfaces(), cl.realInterfaceTypes(), cl.innerClasses(),
+                cl.allConstructors(), cl.allSelfMethods(), cl.annotationElements(), cl.allSelfFields(),
+                cl.enumConstants(), cl.containingPackage(), cl.containingClass(),
+                supr, supr.asTypeInfo(), cl.annotations());
+        /// @}
+        } else {
+            cl.init(cl.asTypeInfo(), cl.realInterfaces(), cl.realInterfaceTypes(), cl.innerClasses(),
+                cl.allConstructors(), cl.allSelfMethods(), cl.annotationElements(), cl.allSelfFields(),
+                cl.enumConstants(), cl.containingPackage(), cl.containingClass(),
+                publicSuper, publicSuper.asTypeInfo(), cl.annotations());
+        }
         Errors.error(Errors.HIDDEN_SUPERCLASS, cl.position(), "Public class " + cl.qualifiedName()
             + " stripped of unavailable superclass " + supr.qualifiedName());
       } else {

@@ -1,4 +1,9 @@
 /*
+* Copyright (C) 2014 MediaTek Inc.
+* Modification based on code covered by the mentioned copyright
+* and/or permission notice(s).
+*/
+/*
  * Copyright (C) 2010 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -451,6 +456,10 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
 
   private static void gatherHiddenInterfaces(ClassInfo cl, HashSet<ClassInfo> interfaces) {
     for (ClassInfo iface : cl.mRealInterfaces) {
+      if (iface == null) {
+        System.out.println("gatherHiddenInterfaces: null interface in class " + cl.name());
+        continue;
+      }
       if (iface.checkLevel()) {
         interfaces.add(iface);
       } else {
@@ -1558,6 +1567,11 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
   public boolean isHiddenImpl() {
     ClassInfo cl = this;
     while (cl != null) {
+        /// M: Override if processing internal. @{
+        if (Doclava.processInternal()) {
+            return !containInternal();
+        }
+	/// @}
       if (cl.hasShowAnnotation()) {
         return false;
       }
@@ -1609,6 +1623,7 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
     return isHidden() || isRemoved();
   }
 
+  /// M: ClassInfo may be initialized with mShowAnnotations being null.
   public boolean hasShowAnnotation() {
     return mShowAnnotations != null && mShowAnnotations.size() > 0;
   }
@@ -2071,12 +2086,20 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
       consistent = false;
     }
     for (ClassInfo iface : mRealInterfaces) {
+      if (iface == null) {
+        System.err.println("isConsistent: null removed interface from class " + cl.name());
+        continue;
+      }
       if (!cl.implementsInterface(iface.mQualifiedName)) {
         Errors.error(Errors.REMOVED_INTERFACE, cl.position(), "Class " + qualifiedName()
             + " no longer implements " + iface);
       }
     }
     for (ClassInfo iface : cl.mRealInterfaces) {
+      if (iface == null) {
+        System.err.println("isConsistent: null added interface from class " + cl.name());
+        continue;
+      }
       if (!implementsInterface(iface.mQualifiedName)) {
         Errors.error(Errors.ADDED_INTERFACE, cl.position(), "Added interface " + iface
             + " to class " + qualifiedName());
@@ -2243,6 +2266,10 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
         Errors.error(Errors.CHANGED_SUPERCLASS, cl.position(), "Class " + qualifiedName()
             + " superclass changed from " + superclassName() + " to " + cl.superclassName());
       }
+    } else if (cl.superclassName() != null) {
+      consistent = false;
+      Errors.error(Errors.CHANGED_SUPERCLASS, cl.position(), "Class " + qualifiedName()
+          + " superclass changed from " + "null to " + cl.superclassName());
     }
 
     if (hasTypeParameters() && cl.hasTypeParameters()) {
@@ -2381,4 +2408,23 @@ public class ClassInfo extends DocInfo implements ContainerInfo, Comparable, Sco
 
       return allResolved;
   }
+  
+  /// M: Check if class contains element with "@internal" annotation. @{
+  public boolean containInternal() {
+      if (constructors().size() > 0) {
+          return true;
+      }
+      if (selfMethods().size() > 0) {
+          return true;
+      }
+      if (selfFields().size() > 0) {
+          return true;
+      }
+      if (enumConstants().size() > 0) {
+          return true;
+      }
+      
+      return false;
+  }
+  /// @}
 }

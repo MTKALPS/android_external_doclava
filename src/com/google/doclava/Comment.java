@@ -1,4 +1,9 @@
 /*
+* Copyright (C) 2014 MediaTek Inc.
+* Modification based on code covered by the mentioned copyright
+* and/or permission notice(s).
+*/
+/*
  * Copyright (C) 2010 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -267,6 +272,12 @@ public class Comment {
   }
 
   private int getPossibleStartOfBlock(String text, int index) {
+
+      /// M: Check if the index is at end of the text. Should not expect always a space after it.
+      if (text.length() <= index + 1) {
+          return -1;
+      }
+
       while (isWhitespaceChar(text.charAt(index+1)) || !isWhitespaceChar(text.charAt(index-1))) {
           index = text.indexOf('@', index+1);
 
@@ -356,6 +367,12 @@ public class Comment {
       mInlineTagsList.add(new CodeTagInfo(text, pos));
     } else if (name.equals("@hide") || name.equals("@removed")
             || name.equals("@pending") || name.equals("@doconly")) {
+      // nothing
+    /// M: Add internal Javadoc tag handling. @{
+    } else if (name.equals("@internal")) {
+        // nothing
+    /// @}
+    } else if (name.equals("@{") || name.equals("@}")) {
       // nothing
     } else if (name.equals("@attr")) {
       AttrTagInfo tag = new AttrTagInfo("@attr", "@attr", text, mBase, pos);
@@ -487,6 +504,16 @@ public class Comment {
 
   public boolean isHidden() {
     if (mHidden == null) {
+        /// M: Add internal Javadoc tag handling. @{
+        if (Doclava.processInternal()) {
+            if (!isInternal()) {
+                mHidden = Boolean.TRUE;
+                return true;
+            } else {
+                return false;
+            }
+        }
+        /// @}
       mHidden = !Doclava.checkLevel(Doclava.SHOW_HIDDEN) &&
           (mText != null) && (mText.indexOf("@hide") >= 0 || mText.indexOf("@pending") >= 0);
     }
@@ -528,6 +555,8 @@ public class Comment {
     isRemoved();
     isDocOnly();
     isDeprecated();
+    /// M: Add internal Javadoc tag handling.
+    isInternal();
 
     // Don't bother parsing text if we aren't generating documentation.
     if (Doclava.parseComments()) {
@@ -575,6 +604,8 @@ public class Comment {
   ContainerInfo mBase;
   SourcePositionInfo mPosition;
   int mLine = 1;
+  /// M: Add internal Javadoc tag handling.
+  int mInternal = -1;
 
   TagInfo[] mInlineTags;
   TagInfo[] mTags;
@@ -598,5 +629,16 @@ public class Comment {
   ArrayList<TagInfo> mUndeprecateTagsList = new ArrayList<TagInfo>();
   ArrayList<AttrTagInfo> mAttrTagsList = new ArrayList<AttrTagInfo>();
 
-
+  /// M: Add internal Javadoc tag handling. @{
+  public boolean isInternal() {
+    if (mInternal != -1) {
+        return mInternal != 0;
+    } else {
+        boolean b = (mText != null) && (mText.indexOf("@internal") >= 0);
+        mInternal = b ? 1 : 0;
+        return b;
+    }
+  }
+  /// @}
 }
+

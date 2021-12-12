@@ -1,4 +1,9 @@
 /*
+* Copyright (C) 2014 MediaTek Inc.
+* Modification based on code covered by the mentioned copyright
+* and/or permission notice(s).
+*/
+/*
  * Copyright (C) 2010 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -64,6 +69,11 @@ public abstract class DocInfo {
     return mRawCommentText;
   }
 
+  /// M: Add internal Javadoc tag handling. @{
+  public boolean isInternal() {
+      return comment().isInternal();
+  }
+  /// @}
   public void setRawCommentText(String rawCommentText) {
       mRawCommentText = rawCommentText;
 
