@@ -115,8 +115,36 @@ public class Doclava {
     return generateDocs || parseComments;
   }
 
+  /// M: Add internal Javadoc tag handling. @{
+  private static boolean processInternal = false;
+  public static boolean processInternal() {
+      return processInternal;
+  }
+  /// @}
+
   public static boolean checkLevel(boolean pub, boolean prot, boolean pkgp, boolean priv,
       boolean hidden) {
+     /// M: Override if processing internal. @{
+     if (processInternal()) {
+         if (hidden) {
+             return false;
+         } else {
+             // Show by levels.
+             if (pub && checkLevel(SHOW_PUBLIC)) {
+                 return true;
+             }
+             if (prot && checkLevel(SHOW_PROTECTED)) {
+                 return true;
+             }
+             if (pkgp && checkLevel(SHOW_PACKAGE)) {
+                 return true;
+             }
+             if (priv && checkLevel(SHOW_PRIVATE)) {
+                 return true;
+             }
+         }
+     }
+     /// @}
     if (hidden && !checkLevel(SHOW_HIDDEN)) {
       return false;
     }
@@ -273,7 +301,11 @@ public class Doclava {
         // Don't copy the doclava assets to devsite output (ie use proj assets only)
         includeDefaultAssets = false;
         outputPathHtmlDirs = outputPathHtmlDirs + "/" + devsiteRoot;
+      /// M: Add internal Javadoc tag handling. @{
+      } else if (a[0].equals("-internal")) {
+          processInternal = true;
       }
+      /// @}
     }
 
     if (!readKnownTagsFiles(knownTags, knownTagsFiles)) {
@@ -391,9 +423,18 @@ public class Doclava {
     }
 
     // Stubs
-    if (stubsDir != null || apiFile != null || proguardFile != null || removedApiFile != null) {
-      Stubs.writeStubsAndApi(stubsDir, apiFile, proguardFile, removedApiFile, stubPackages);
+    /// M: Add internal Javadoc tag handling. @{
+    if (processInternal()) {
+        if (stubsDir != null || apiFile != null) {
+            MediatekStubs.writeStubsAndApi(stubsDir, apiFile, stubPackages);
+        }
+    } else {
+        // Stubs
+         if (stubsDir != null || apiFile != null || proguardFile != null || removedApiFile != null) {
+            Stubs.writeStubsAndApi(stubsDir, apiFile, proguardFile, removedApiFile, stubPackages);
+        }
     }
+    /// @}
 
     Errors.printErrors();
 
@@ -662,6 +703,9 @@ public class Doclava {
     }
     if (option.equals("-metadataDebug")) {
       return 1;
+    }
+    if (option.equals("-internal")) {
+        return 1;
     }
     return 0;
   }

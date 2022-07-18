@@ -43,7 +43,8 @@ public class Stubs {
     if (apiFile != null) {
       try {
         File xml = new File(apiFile);
-        xml.getParentFile().mkdirs();
+//        xml.getParentFile().mkdirs();
+        ClearPage.ensureDirectory(xml);
         apiWriter = new PrintStream(new BufferedOutputStream(new FileOutputStream(xml)));
       } catch (FileNotFoundException e) {
         Errors.error(Errors.IO_ERROR, new SourcePositionInfo(apiFile, 0, 0),
